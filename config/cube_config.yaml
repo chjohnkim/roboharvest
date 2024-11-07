@@ -1,0 +1,8 @@
+cube_dim: 0.07
+marker_dim: 0.025
+marker_sep: 0.01 # separation between markers
+cube_side2id_map: 
+  'top': [20, 21, 22, 23]
+  'back': [24, 25, 26, 27]
+  'left': [28, 29, 30, 31]
+  'right': [32, 33, 34, 35]

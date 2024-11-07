@@ -1,97 +1,90 @@
 # RoboHarvest
+This repository is the codebase for our paper: [Title of Paper]().
 
-This package estimates the state of a GoPro9 by fusing camera pose data from a visual fiducial marker with IMU data using an Extended Kalman Filter.
+See the [project page]() for more information.
 
-## Purpose
+## 🙏 Acknowledgement
+This repository is adapted from the [Universal Manipulation Interface (UMI)](https://github.com/real-stanford/universal_manipulation_interface) repository with modifications in its data collection method, processing pipeline, and hardware customization.   
 
-The `gopro_state_estimator` package is designed to enhance the data processing pipeline of [UMI](https://github.com/real-stanford/universal_manipulation_interface) for outdoor scenes, where background objects may be dynamic (i.e., moving). In contrast, the original ORB-SLAM3-based state estimation pipeline of UMI is optimized for static scene environments.
-
-## Approach
-
-The state estimation is achieved by fusing pose measurements from an ArUco cube on UMI with IMU sensor readings. This package also accounts for the additional overhead introduced by a bird's-eye view camera that tracks the fiducial marker cube. 
-This repository manages the integration of these elements to provide accurate state estimation in dynamic outdoor environments.
-
-
-## 🛠️ Installation (Same as [UMI](https://github.com/real-stanford/universal_manipulation_interface))
+## 🛠️ Installation 
 Only tested on Ubuntu 22.04
 
 Install docker following the [official documentation](https://docs.docker.com/engine/install/ubuntu/) and finish [linux-postinstall](https://docs.docker.com/engine/install/linux-postinstall/).
 
 Install system-level dependencies:
-```console
+```
 sudo apt install -y libosmesa6-dev libgl1-mesa-glx libglfw3 patchelf
 ```
 
-We recommend [Miniforge](https://github.com/conda-forge/miniforge?tab=readme-ov-file#miniforge3) instead of the standard anaconda distribution for faster installation: 
-```console
-mamba env create -f conda_environment.yaml
+Create conda environment:
+```
+conda env create -f conda_environment.yaml
 ```
 
-Activate environment
-```console
-conda activate umi 
+Activate environment:
+```
+conda activate roboharvest 
 ```
 
-## Additional Installations
-Install DynamixelSDK
+Install DynamixelSDK for gripper control by following the [official documentation](https://emanual.robotis.com/docs/en/software/dynamixel/dynamixel_sdk/download/#repository).
 
-# Calibrate bird-eye view pinhole (linear) camera
-Scan [this GoPro firmware QR code](assets/QR_gopro_linear_mVr1440p60e0!NfL0hS0dR0aSv1q0oV0R1L0.png), take video of checkerboard, and run:
+## 🏃 Running Data Preprocessing Pipeline
+Download example data and unzip all video's into a single folder (e.g. `roboharvest/demo_data`):
 ```
-python scripts/calibrate_camera.py --video_path [path_to_video.mp4]
-```
-
-# Run Data Pipeline
-1. Place all video's including birdseye-view and inhand-view in a single folder (e.g. `gopro_state_estimator/data`)
-
-2. To run data pipeline:
-```console
-python run_data_pipeline.py ./[path_to_demo_video_data] --mode [gripper or pruner or pruner_inverse]
+pip install gdown
+gdown 'https://drive.google.com/uc?export=download&id=1AEcEIvVZTcqkem8oE1XAGe1M05n1VJ_t'
+unzip demo_data.zip -d demo_data && rm demo_data.zip
 ```
 
-3. Generate dataset for training.
-```console
-python scripts_data_processing/07_generate_replay_buffer.py -o ./[path_to_demo_video_data]/dataset.zarr.zip ./[path_to_demo_video_data]
+Run data pipeline:
+```
+python run_data_pipeline.py ./demo_data --mode pruner_inverse
 ```
 
-4. Copy the generated `dataset.zarr.zip` to [UMI](https://github.com/real-stanford/universal_manipulation_interface) repo and train the diffusion policy.  
+Generate dataset for training.
+```
+python scripts_data_processing/07_generate_replay_buffer.py -o ./demo_data/dataset.zarr.zip ./demo_data
+```
 
-
-## Training Diffusion Policy
-Single-GPU training. Tested to work on RTX3090 24GB.
-```console
-(umi)$ python train.py --config-name=train_diffusion_unet_timm_umi_workspace task.dataset_path=example_demo_session/dataset.zarr.zip
+## 🚆 Training Diffusion Policy
+Single-GPU training. 
+```
+python train.py --config-name=train_diffusion_unet_timm_umi_workspace task.dataset_path=demo_data/dataset.zarr.zip
 ```
 
 Multi-GPU training.
-```console
-(umi)$ accelerate --num_processes <ngpus> train.py --config-name=train_diffusion_unet_timm_umi_workspace task.dataset_path=example_demo_session/dataset.zarr.zip
+```
+accelerate --num_processes <ngpus> train.py --config-name=train_diffusion_unet_timm_umi_workspace task.dataset_path=demo_data/dataset.zarr.zip
 ```
 
-# Other example commands
-Once data is processed, 6-DOF pose can be visualized by specifying session directory:
+## 💡 Other useful scripts
+Once data is processed, 6-DOF pose can be visualized by specifying data directory:
 ```
-python scripts/visualize_data.py [session_dir] 
+python scripts/visualize_data.py ./demo_data
 ```
 
-To visualize a rollout trajectory:
+To visualize a rollout trajectory (only works on output zarr files from actual robot deployment rollout):
 ```
 python scripts/replay_episode.py -z [./data/path_to_zarr]
 ```
 
-To generate aruco cube tracking video:
+To generate fiducial cube tracking video:
 ```
-python scripts/example_track_aruco.py -i [path_to_mp4_file] -o [path_to_output_mp4]
-```
-
-To run EKF script:
-```
-python scripts/extended_kalman_filter.py -i data/demos/robot -v -o output/robot_traj.mp4
+python scripts/example_track_fiducial_cube.py -i [path_to_mp4_file] -o [path_to_output_mp4]
 ```
 
-To combine generated videos:
+## 🦾 Real World Deployment
+We refer users to [UMI](https://github.com/real-stanford/universal_manipulation_interface) for hardware setup of the UR5e Robot Arm, GoPro camera, and SpaceMouse. The only difference is the custom shear-gripper end-effector detailed in the hardware section. 
+Make appropriate changes to `robot_launch.sh` according to directories and USB settings and launch:
 ```
-ffmpeg -i output/robot.mp4 -i output/robot_traj.mp4 -filter_complex "[0]scale=-1:1080[a];[1]scale=-1:1080[b];[a][b]hstack" -r 30 output/robot_combined.mp4
+bash robot_launch.sh
+```
+
+## Data Collection
+### Calibrate bird-eye view pinhole (linear) camera
+Scan [this GoPro firmware QR code](assets/QR_gopro_linear_mVr1440p60e0!NfL0hS0dR0aSv1q0oV0R1L0.png), take video of checkerboard, and run:
+```
+python scripts/calibrate_camera.py --video_path [path_to_video.mp4]
 ```
 
 # Coordinate Frames
@@ -103,3 +96,6 @@ ffmpeg -i output/robot.mp4 -i output/robot_traj.mp4 -filter_complex "[0]scale=-1
 # Useful Links
 - [OpenImuCameraCalibrator](https://github.com/urbste/OpenImuCameraCalibrator): GoPro Calibration (frames and syncs)
 - [gpmf_parser](https://gopro.github.io/gpmf-parser/): IMU Frame
+
+## 🏷️ License
+This repository is released under the MIT license. See [LICENSE](LICENSE) for additional details.

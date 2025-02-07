@@ -19,7 +19,10 @@ Press "S" to stop evaluation and gain control back.
 
 # %%
 import os
-import pathlib
+import sys
+ROOT_DIR = os.path.dirname(os.path.dirname(__file__))
+sys.path.append(ROOT_DIR)
+os.chdir(ROOT_DIR)
 import time
 from multiprocessing.managers import SharedMemoryManager
 

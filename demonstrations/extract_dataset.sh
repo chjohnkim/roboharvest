@@ -1,13 +1,13 @@
 #!/bin/bash
 # This script extracts video files from zip archives whose filenames start with
-# 'data_pepper_demo' and moves all .MP4 files into the same directory as the zip files.
+# 'demonstrations' and moves all .MP4 files into the same directory as the zip files.
 
 # Set the destination directory to the current working directory.
 DEST_DIR=$(pwd)
 echo "Using destination directory: $DEST_DIR"
 
 # Loop over all zip files starting with the prefix.
-for zip_file in data_pepper_demo*.zip; do
+for zip_file in demonstrations*.zip; do
     # Check if the file exists (in case no files match the pattern).
     if [ -f "$zip_file" ]; then
         echo "Processing $zip_file..."

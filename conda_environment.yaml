@@ -58,3 +58,4 @@ dependencies:
     #- robosuite @ https://github.com/cheng-chi/robosuite/archive/3f2c3116f1c0a1916e94bfa28da4d055927d1ab3.tar.gz
     # implicitly depend on conda package exiftool
     - PyExifTool==0.5
+    - scikit-image

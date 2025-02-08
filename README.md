@@ -1,7 +1,7 @@
 # RoboHarvest
-This repository is the codebase for our paper: [Title of Paper]().
+This repository is the codebase for our paper: [Autonomous Robotic Pepper Harvesting: Imitation Learning in Unstructured Agricultural Environments](https://arxiv.org/abs/2411.09929).
 
-See the [project page]() for more information.
+See the [project page](https://kantor-lab.github.io/roboharvest/) for more information.
 
 ## 🙏 Acknowledgement
 This repository is adapted from the [Universal Manipulation Interface (UMI)](https://github.com/real-stanford/universal_manipulation_interface) repository with modifications in its data collection method, processing pipeline, and hardware customization.   
@@ -28,39 +28,54 @@ conda activate roboharvest
 
 Install DynamixelSDK for gripper control by following the [official documentation](https://emanual.robotis.com/docs/en/software/dynamixel/dynamixel_sdk/download/#repository).
 
-## 🏃 Running Data Preprocessing Pipeline
-Download example data and unzip all video's into a single folder (e.g. `roboharvest/demo_data`):
+## 📂 Dataset
+You can either download an example dataset and unzip all video's into a single folder (e.g. `roboharvest/demo_data`):
 ```
 pip install gdown
 gdown 'https://drive.google.com/uc?export=download&id=1AEcEIvVZTcqkem8oE1XAGe1M05n1VJ_t'
 unzip demo_data.zip -d demo_data && rm demo_data.zip
 ```
+OR download the full dataset from this [link](). 
+Copy the downloaded `demonstrations*.zip` files into the `roboharvest/demonstrations` folder and run the extraction bash script:
+```
+cd demonstrations 
+bash extract_dataset.sh
+```
+This will result in a single folder containing 605 videos (~300 egocentric POV videos and ~300 birdseye POV videos). Run the data preprocessing pipeline on these videos. 
 
+## 🏃 Running Data Preprocessing Pipeline
 Run data pipeline:
 ```
-python run_data_pipeline.py ./demo_data --mode pruner_inverse
+python run_data_pipeline.py ./[data_folder] --mode pruner_inverse
 ```
 
 Generate dataset for training.
 ```
-python scripts_data_processing/07_generate_replay_buffer.py -o ./demo_data/dataset.zarr.zip ./demo_data
+python scripts_data_processing/07_generate_replay_buffer.py -o ./[data_folder]/dataset.zarr.zip ./[data_folder]
 ```
 
 ## 🚆 Training Diffusion Policy
 Single-GPU training. 
 ```
-python train.py --config-name=train_diffusion_unet_timm_umi_workspace task.dataset_path=demo_data/dataset.zarr.zip
+python train.py --config-name=train_diffusion_unet_timm_umi_workspace task.dataset_path=[data_folder]/dataset.zarr.zip
 ```
 
 Multi-GPU training.
 ```
-accelerate --num_processes <ngpus> train.py --config-name=train_diffusion_unet_timm_umi_workspace task.dataset_path=demo_data/dataset.zarr.zip
+accelerate --num_processes <ngpus> train.py --config-name=train_diffusion_unet_timm_umi_workspace task.dataset_path=[data_folder]/dataset.zarr.zip
+```
+
+## 🦾 Real World Deployment
+We refer users to [UMI](https://github.com/real-stanford/universal_manipulation_interface) for hardware setup of the UR5e Robot Arm, GoPro camera, and SpaceMouse. The only difference is the custom shear-gripper end-effector, CAD and Bill of Materials made available in the [project page](https://kantor-lab.github.io/roboharvest/). 
+Make appropriate changes to `robot_launch.sh` according to directories and USB settings and launch:
+```
+bash robot_launch.sh
 ```
 
 ## 💡 Other useful scripts
 Once data is processed, 6-DOF pose can be visualized by specifying data directory:
 ```
-python scripts/visualize_data.py ./demo_data
+python scripts/visualize_data.py ./[data_folder]
 ```
 
 To visualize a rollout trajectory (only works on output zarr files from actual robot deployment rollout):
@@ -71,13 +86,6 @@ python scripts/replay_episode.py -z [./data/path_to_zarr]
 To generate fiducial cube tracking video:
 ```
 python scripts/example_track_fiducial_cube.py -i [path_to_mp4_file] -o [path_to_output_mp4]
-```
-
-## 🦾 Real World Deployment
-We refer users to [UMI](https://github.com/real-stanford/universal_manipulation_interface) for hardware setup of the UR5e Robot Arm, GoPro camera, and SpaceMouse. The only difference is the custom shear-gripper end-effector detailed in the hardware section. 
-Make appropriate changes to `robot_launch.sh` according to directories and USB settings and launch:
-```
-bash robot_launch.sh
 ```
 
 ## Data Collection

@@ -35,7 +35,7 @@ pip install gdown
 gdown 'https://drive.google.com/uc?export=download&id=1AEcEIvVZTcqkem8oE1XAGe1M05n1VJ_t'
 unzip demo_data.zip -d demo_data && rm demo_data.zip
 ```
-OR download the full dataset from this [link](). 
+OR download the full dataset from this [link](https://drive.google.com/drive/folders/1aOAZZtV7i4aV8h44SFUfrasqcwhuxUBD?usp=sharing). 
 Copy the downloaded `demonstrations*.zip` files into the `roboharvest/demonstrations` folder and run the extraction bash script:
 ```
 cd demonstrations 
